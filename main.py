@@ -1,10 +1,25 @@
 import telebot
 from telebot import types
+from flask import Flask
+from threading import Thread
 
-# Token ve Admin Bilgileri
+# --- AYARLAR ---
 TOKEN = '8873167036:AAEDWEysqF0wo9QTgfZ6_Vcbk2xiQ-Ys31U'
 ADMIN_USERNAME = "@vesk" 
 bot = telebot.TeleBot(TOKEN)
+
+# --- WEB SUNUCUSU (Uyumaması İçin) ---
+app = Flask(__name__)
+@app.route('/')
+def home():
+    return "Vesk Bot Aktif!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
 
 # --- MENÜLER ---
 def ana_menu():
@@ -41,7 +56,6 @@ def sorgu_paneli_genis():
 def start(message):
     bot.send_message(message.chat.id, "🚀 *VESK SORGU PANELİ*\nHoş geldin! İşlem seç:", reply_markup=ana_menu(), parse_mode="Markdown")
 
-# --- BUTON TEPKİLERİ ---
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
     if call.data == "sorgu_listesi":
@@ -58,6 +72,7 @@ def handle_query(call):
     elif call.data == "vip_bilgi":
         bot.send_message(call.message.chat.id, f"💎 *VIP ÜYELİK AVANTAJLARI*\n\n✅ Tüm sorgular sınırsız.\n✅ SMS Bombing & Casus Yazılım aktif.\n\n💰 Satın almak için: {ADMIN_USERNAME}", parse_mode="Markdown")
 
-print("Bot aktif ediliyor...")
-bot.infinity_polling()
-
+# --- BOTU BAŞLAT ---
+if __name__ == "__main__":
+    keep_alive() # Web sunucusunu başlat
+    bot.infinity_polling() # Botu başlat
