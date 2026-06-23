@@ -28,13 +28,13 @@ def dosya_olustur_ve_gonder(message, baslik, adet, format_tipi="tc"):
                 tc = "".join([str(random.randint(0, 9)) for _ in range(11)])
                 f.write(f"Kişi_{i+1} | Ad: {message.text.title()} | TC: {tc}\n")
             elif format_tipi == "sicil":
-                f.write(f"Tutanak {i+1}: {message.text.title()} - Okul Disiplin Kaydı - Durum: {random.choice(['Kınama', 'Uyarı', 'Disiplin Kurulu'])}\n")
+                f.write(f"Tutanak {i+1}: {message.text.title()} | Durum: {random.choice(['Kınama', 'Uyarı', 'Disiplin', 'Temiz'])}\n")
     
     with open(dosya_adi, "rb") as doc:
         bot.send_document(message.chat.id, doc, caption=f"✅ {baslik} sonucu bulundu.")
     os.remove(dosya_adi)
 
-# --- WEB (7/24) ---
+# --- WEB ---
 app = Flask(__name__)
 @app.route('/')
 def home(): return "Vesk Bot Aktif!"
@@ -52,7 +52,7 @@ def ana_menu():
 
 def sorgu_paneli_genis():
     markup = types.InlineKeyboardMarkup(row_width=2)
-    # Görsellerdeki tüm butonlar eklendi
+    # Eski ve yeni tüm butonlar burada
     butonlar = [
         ("💳 Iban Sorgu", "sim_islem"), ("👨‍👩‍👧 Aile Detaylı", "aile_gir"),
         ("🏠 Hane Sorgu", "sim_islem"), ("🧒 Yeğen Sorgu", "sim_islem"),
@@ -61,7 +61,9 @@ def sorgu_paneli_genis():
         ("🎓 Üniversite Sorgu", "sim_islem"), ("🏢 İşyeri Sorgu", "sim_islem"),
         ("🚗 Araç Muayene", "sim_islem"), ("🚙 Plaka Sorgu", "plaka_gir"),
         ("🌳 Soyağacı Sorgu", "soya_gir"), ("📸 Instagram Hack", "insta_gir"),
-        ("💻 Casus Yazılım", "casus_baslat"), ("👤 Soyisimsiz Sorgu", "soyisim_baslat")
+        ("💻 Casus Yazılım", "casus_baslat"), ("👤 Soyisimsiz Sorgu", "soyisim_baslat"),
+        ("💣 Sms Saldırısı", "sim_islem"), ("🏫 Sınıf Sorgu", "sim_islem"),
+        ("📜 Seri No Sorgu", "sim_islem"), ("🏢 Mersis Dükkan", "sim_islem")
     ]
     for text, cd in butonlar: markup.add(types.InlineKeyboardButton(text, callback_data=cd))
     markup.add(types.InlineKeyboardButton("⬅️ Geri", callback_data="ana_menu"))
@@ -70,29 +72,34 @@ def sorgu_paneli_genis():
 # --- CALLBACK ---
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
-    if call.data == "sorgu_listesi":
+    if call.data == "ana_menu":
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🚀 *VESK SORGU PANELİ*", reply_markup=ana_menu(), parse_mode="Markdown")
+    elif call.data == "sorgu_listesi":
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="📁 *VİP SORGULAR*", reply_markup=sorgu_paneli_genis(), parse_mode="Markdown")
     elif call.data == "aile_gir":
-        msg = bot.send_message(call.message.chat.id, "🔍 Aile detaylı için Soyadı girin:")
+        msg = bot.send_message(call.message.chat.id, "🔍 Soyadı girin:")
         bot.register_next_step_handler(msg, lambda m: dosya_olustur_ve_gonder(m, "Aile Detaylı", 200, "tc"))
     elif call.data == "sicil_gir":
-        msg = bot.send_message(call.message.chat.id, "🔍 Sicil sorgusu için isim girin:")
+        msg = bot.send_message(call.message.chat.id, "🔍 İsim girin:")
         bot.register_next_step_handler(msg, lambda m: dosya_olustur_ve_gonder(m, "Sicil Tutanak", 15, "sicil"))
     elif call.data == "soya_gir":
-        msg = bot.send_message(call.message.chat.id, "🔍 Soyağacı için TC girin:")
+        msg = bot.send_message(call.message.chat.id, "🔍 TC girin:")
         bot.register_next_step_handler(msg, lambda m: dosya_olustur_ve_gonder(m, "Soyağacı", 100, "tc"))
     elif call.data == "plaka_gir":
         msg = bot.send_message(call.message.chat.id, "🚗 Plaka giriniz:")
         bot.register_next_step_handler(msg, lambda m: bot.send_message(m.chat.id, f"🚗 {m.text.upper()} plaka bilgisi admin paneline iletildi."))
     elif call.data == "insta_gir":
         msg = bot.send_message(call.message.chat.id, "📸 Hedef kullanıcı adını gir:")
-        bot.register_next_step_handler(msg, lambda m: bot.send_message(m.chat.id, f"✅ @{m.text} analizi yapıldı. Detaylar için: {ADMIN_USERNAME}"))
+        bot.register_next_step_handler(msg, lambda m: bot.send_message(m.chat.id, f"✅ @{m.text} analizi yapıldı."))
+    elif call.data == "casus_baslat":
+        bot.send_message(call.message.chat.id, f"🌐 Link: https://global-izleme.com/capture?id={random.randint(1000,9999)}")
+    elif call.data == "soyisim_baslat":
+        msg = bot.send_message(call.message.chat.id, "🔍 İsim girin:")
+        bot.register_next_step_handler(msg, lambda m: dosya_olustur_ve_gonder(m, "Soyisimsiz", 500, "tc"))
     elif call.data == "sim_islem":
-        bot.answer_callback_query(call.id, "⚠️ VIP Gerekli! Satın almak için ana menüye dön.")
-    elif call.data == "ana_menu":
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🚀 *VESK SORGU PANELİ*", reply_markup=ana_menu(), parse_mode="Markdown")
+        bot.answer_callback_query(call.id, "⚠️ VIP Gerekli!")
     elif call.data == "vip_bilgi":
-        bot.send_message(call.message.chat.id, f"💎 *VIP ÜYELİK*\nSatın almak için: {ADMIN_USERNAME}")
+        bot.send_message(call.message.chat.id, f"💎 *VIP ÜYELİK*\nİletişim: {ADMIN_USERNAME}")
 
 @bot.message_handler(commands=['start'])
 def start(message):
