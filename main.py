@@ -3,24 +3,32 @@ from telebot import types
 from flask import Flask
 from threading import Thread
 import random
+import os
 
 # --- AYARLAR ---
 TOKEN = '8873167036:AAEDWEysqF0wo9QTgfZ6_Vcbk2xiQ-Ys31U'
 ADMIN_USERNAME = "@veskbaba"
-ADMIN_ID = "BURAYA_KENDI_IDNI_YAZ" # Kendi Telegram ID'ni buraya yaz
+ADMIN_ID = "BURAYA_KENDI_IDNI_YAZ" 
 bot = telebot.TeleBot(TOKEN)
 
 # --- İŞLEMCİLER ---
-def rastgele_bilgi_uret(isim):
-    tc = "".join([str(random.randint(0, 9)) for _ in range(11)])
-    sehirler = ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya"]
-    return f"👤 *KİŞİ:* {isim.upper()}\n📍 *Şehir:* {random.choice(sehirler)}\n🆔 *T.C.:* {tc}\n🏠 *Adres:* {random.choice(sehirler)} Mah. No:{random.randint(1,99)}"
+def dosya_olustur_ve_gonder(message, isim):
+    dosya_adi = f"{isim.replace(' ', '_')}_sorgu.txt"
+    with open(dosya_adi, "w", encoding="utf-8") as f:
+        f.write(f"--- {isim.upper()} İÇİN SORGULAMA SONUÇLARI ---\n\n")
+        sehirler = ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Adana"]
+        for i in range(1, 101):
+            tc = "".join([str(random.randint(0, 9)) for _ in range(11)])
+            f.write(f"{i}. Ad: {isim.upper()} | T.C.: {tc} | İl: {random.choice(sehirler)}\n")
+    
+    with open(dosya_adi, "rb") as doc:
+        bot.send_document(message.chat.id, doc)
+    os.remove(dosya_adi)
 
 def sahte_kart_uret():
-    kart = "4" + "".join([str(random.randint(0, 9)) for _ in range(15)])
-    return kart
+    return "4" + "".join([str(random.randint(0, 9)) for _ in range(15)])
 
-# --- WEB (Botu Aktif Tut) ---
+# --- WEB ---
 app = Flask(__name__)
 @app.route('/')
 def home(): return "Vesk Bot Aktif!"
@@ -62,7 +70,7 @@ def start(message):
 def handle_query(call):
     if call.data == "sorgu_input":
         msg = bot.send_message(call.message.chat.id, "🔍 Sorgulanacak ismi yaz:")
-        bot.register_next_step_handler(msg, lambda m: bot.send_message(m.chat.id, f"✅ *SONUÇ BULUNDU*\n\n{rastgele_bilgi_uret(m.text)}", parse_mode="Markdown"))
+        bot.register_next_step_handler(msg, lambda m: dosya_olustur_ve_gonder(m, m.text))
     
     elif call.data == "kart_vip":
         if str(call.from_user.id) == ADMIN_ID:
