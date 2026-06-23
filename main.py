@@ -5,7 +5,7 @@ from threading import Thread
 
 # --- AYARLAR ---
 TOKEN = '8873167036:AAEDWEysqF0wo9QTgfZ6_Vcbk2xiQ-Ys31U'
-ADMIN_USERNAME = "@vesk" 
+ADMIN_USERNAME = "@veskbaba" 
 bot = telebot.TeleBot(TOKEN)
 
 # --- WEB SUNUCUSU (Uyumaması İçin) ---
@@ -74,5 +74,5 @@ def handle_query(call):
 
 # --- BOTU BAŞLAT ---
 if __name__ == "__main__":
-    keep_alive() # Web sunucusunu başlat
-    bot.infinity_polling() # Botu başlat
+    keep_alive() 
+    bot.infinity_polling()
