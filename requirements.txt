@@ -1,3 +1,4 @@
 pyTelegramBotAPI
 python-whois
 flask
+requests
