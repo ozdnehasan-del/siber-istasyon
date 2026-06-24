@@ -12,7 +12,7 @@ TOKEN = '8873167036:AAEDWEysqF0wo9QTgfZ6_Vcbk2xiQ-Ys31U'
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# --- WEB SUNUCUSU (Render'ın uyumaması için) ---
+# --- WEB SUNUCUSU ---
 @app.route('/')
 def home():
     return "Vesk-OSINT Botu Aktif!"
@@ -20,7 +20,7 @@ def home():
 def run_server(port):
     app.run(host='0.0.0.0', port=port)
 
-# --- BOT FONKSİYONLARI ---
+# --- ANA MENÜ ---
 def ana_menu():
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -30,23 +30,26 @@ def ana_menu():
     )
     return markup
 
+# --- START KOMUTU (Engelsiz) ---
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(message.chat.id, "🚀 *Vesk-OSINT İstihbarat toplamaya hoş geldiniz.*", parse_mode="Markdown")
-    bot.send_message(message.chat.id, "Sistem aktif. Hedef analizi için paneli kullanın:", reply_markup=ana_menu(), parse_mode="Markdown")
+    bot.send_message(message.chat.id, "🚀 *Vesk-OSINT Paneline Hoş Geldiniz.*", parse_mode="Markdown")
+    bot.send_message(message.chat.id, "İstediğiniz analizi aşağıdan seçin:", reply_markup=ana_menu(), parse_mode="Markdown")
 
+# --- CALLBACK İŞLEMLERİ ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
     if call.data == "do_url":
-        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔗 Analiz edilecek URL'yi girin (http ile):")
+        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔗 URL'yi girin (http ile):")
         bot.register_next_step_handler(msg, link_analiz_islem)
     elif call.data == "do_ip":
-        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="📍 Analiz edilecek IP adresini girin:")
+        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="📍 IP adresini girin:")
         bot.register_next_step_handler(msg, ip_analiz_islem)
     elif call.data == "do_domain":
-        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔍 Analiz edilecek domaini girin (örn: google.com):")
+        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔍 Domaini girin (örn: google.com):")
         bot.register_next_step_handler(msg, domain_analiz_islem)
 
+# --- ANALİZ FONKSİYONLARI ---
 def link_analiz_islem(message):
     try:
         r = requests.get(message.text, timeout=10)
@@ -78,13 +81,8 @@ def domain_analiz_islem(message):
 
 # --- BAŞLATICI ---
 if __name__ == "__main__":
-    # Render'ın verdiği portu otomatik al, yoksa 8080 kullan
     port = int(os.environ.get('PORT', 8080))
-    
-    # Web sunucusunu arka planda başlat
     t = Thread(target=run_server, args=(port,))
     t.daemon = True
     t.start()
-    
-    # Botu başlat
-    bot.infinity_polling(timeout=60, long_polling_timeout=60)
+    bot.infinity_polling()
