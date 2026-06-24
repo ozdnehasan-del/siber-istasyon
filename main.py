@@ -7,8 +7,8 @@ import os
 from flask import Flask
 from threading import Thread
 
-# --- TOKEN ---
-TOKEN = '8873167036:AAEDWEysqF0wo9QTgfZ6_Vcbk2xiQ-Ys31U'
+# --- TOKEN (GÜNCEL) ---
+TOKEN = '8873167036:AAH9BXyAgNqwbwY0jthyEbDh189yOSqPNWE'
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
@@ -30,7 +30,7 @@ def ana_menu():
     )
     return markup
 
-# --- START KOMUTU (Engelsiz) ---
+# --- START KOMUTU ---
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(message.chat.id, "🚀 *Vesk-OSINT Paneline Hoş Geldiniz.*", parse_mode="Markdown")
