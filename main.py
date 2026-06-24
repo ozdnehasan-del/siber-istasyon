@@ -3,10 +3,22 @@ from telebot import types
 import requests
 import whois
 import socket
+import os
+from flask import Flask
+from threading import Thread
 
-# Yeni Token'ın yerleştirildi
+# Token
 TOKEN = '8873167036:AAEDWEysqF0wo9QTgfZ6_Vcbk2xiQ-Ys31U'
 bot = telebot.TeleBot(TOKEN)
+app = Flask(__name__)
+
+# --- WEB SUNUCUSU (Render'ın uyumaması için) ---
+@app.route('/')
+def home():
+    return "Bot aktif!"
+
+def run():
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
 
 # --- ANA MENÜ ---
 def ana_menu():
@@ -21,28 +33,22 @@ def ana_menu():
 # --- START ---
 @bot.message_handler(commands=['start'])
 def start(message):
-    try:
-        remove_markup = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, "🚀 *Vesk-OSINT İstihbarat toplamaya hoş geldiniz.*", reply_markup=remove_markup, parse_mode="Markdown")
-        bot.send_message(message.chat.id, "Sistem aktif. Hedef analizi için paneli kullanın:", reply_markup=ana_menu(), parse_mode="Markdown")
-    except Exception as e:
-        print(f"Start hatası: {e}")
+    remove_markup = types.ReplyKeyboardRemove()
+    bot.send_message(message.chat.id, "🚀 *Vesk-OSINT İstihbarat toplamaya hoş geldiniz.*", reply_markup=remove_markup, parse_mode="Markdown")
+    bot.send_message(message.chat.id, "Sistem aktif. Hedef analizi için paneli kullanın:", reply_markup=ana_menu(), parse_mode="Markdown")
 
 # --- CALLBACK ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
-    try:
-        if call.data == "do_url":
-            msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔗 Analiz edilecek URL'yi girin (http ile):")
-            bot.register_next_step_handler(msg, link_analiz_islem)
-        elif call.data == "do_ip":
-            msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="📍 Analiz edilecek IP adresini girin:")
-            bot.register_next_step_handler(msg, ip_analiz_islem)
-        elif call.data == "do_domain":
-            msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔍 Analiz edilecek domaini girin (örn: google.com):")
-            bot.register_next_step_handler(msg, domain_analiz_islem)
-    except Exception as e:
-        print(f"Callback hatası: {e}")
+    if call.data == "do_url":
+        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔗 Analiz edilecek URL'yi girin (http ile):")
+        bot.register_next_step_handler(msg, link_analiz_islem)
+    elif call.data == "do_ip":
+        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="📍 Analiz edilecek IP adresini girin:")
+        bot.register_next_step_handler(msg, ip_analiz_islem)
+    elif call.data == "do_domain":
+        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔍 Analiz edilecek domaini girin (örn: google.com):")
+        bot.register_next_step_handler(msg, domain_analiz_islem)
 
 # --- İŞLEMCİLER ---
 def link_analiz_islem(message):
@@ -74,7 +80,10 @@ def domain_analiz_islem(message):
         rapor = f"❌ Hata: {str(e)}"
     bot.send_message(message.chat.id, rapor, parse_mode="Markdown", reply_markup=ana_menu())
 
-# Hata toleranslı polling
+# --- BAŞLATICI ---
 if __name__ == "__main__":
-    print("Bot başlatılıyor...")
-    bot.infinity_polling(timeout=10, long_polling_timeout=5)
+    # Web sunucusunu başlat
+    t = Thread(target=run)
+    t.start()
+    # Botu çalıştır
+    bot.infinity_polling()
