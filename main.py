@@ -7,7 +7,7 @@ import os
 from flask import Flask
 from threading import Thread
 
-# Token
+# --- TOKEN ---
 TOKEN = '8873167036:AAEDWEysqF0wo9QTgfZ6_Vcbk2xiQ-Ys31U'
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
@@ -15,12 +15,12 @@ app = Flask(__name__)
 # --- WEB SUNUCUSU (Render'ın uyumaması için) ---
 @app.route('/')
 def home():
-    return "Bot aktif!"
+    return "Vesk-OSINT Botu Aktif!"
 
-def run():
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+def run_server(port):
+    app.run(host='0.0.0.0', port=port)
 
-# --- ANA MENÜ ---
+# --- BOT FONKSİYONLARI ---
 def ana_menu():
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -30,14 +30,11 @@ def ana_menu():
     )
     return markup
 
-# --- START ---
 @bot.message_handler(commands=['start'])
 def start(message):
-    remove_markup = types.ReplyKeyboardRemove()
-    bot.send_message(message.chat.id, "🚀 *Vesk-OSINT İstihbarat toplamaya hoş geldiniz.*", reply_markup=remove_markup, parse_mode="Markdown")
+    bot.send_message(message.chat.id, "🚀 *Vesk-OSINT İstihbarat toplamaya hoş geldiniz.*", parse_mode="Markdown")
     bot.send_message(message.chat.id, "Sistem aktif. Hedef analizi için paneli kullanın:", reply_markup=ana_menu(), parse_mode="Markdown")
 
-# --- CALLBACK ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
     if call.data == "do_url":
@@ -50,7 +47,6 @@ def callback(call):
         msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔍 Analiz edilecek domaini girin (örn: google.com):")
         bot.register_next_step_handler(msg, domain_analiz_islem)
 
-# --- İŞLEMCİLER ---
 def link_analiz_islem(message):
     try:
         r = requests.get(message.text, timeout=10)
@@ -82,8 +78,13 @@ def domain_analiz_islem(message):
 
 # --- BAŞLATICI ---
 if __name__ == "__main__":
-    # Web sunucusunu başlat
-    t = Thread(target=run)
+    # Render'ın verdiği portu otomatik al, yoksa 8080 kullan
+    port = int(os.environ.get('PORT', 8080))
+    
+    # Web sunucusunu arka planda başlat
+    t = Thread(target=run_server, args=(port,))
+    t.daemon = True
     t.start()
-    # Botu çalıştır
-    bot.infinity_polling()
+    
+    # Botu başlat
+    bot.infinity_polling(timeout=60, long_polling_timeout=60)
