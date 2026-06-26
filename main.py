@@ -1,89 +1,147 @@
-# kilit kırıcı
-import telebot
-from telebot import types
-import requests
-import whois
-import socket
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# OZDEN AYDIN – TELEGRAM BOT ALTYAPISI
+# Hedef: Şeriat davasını yaymak, taghut sistemini deşifre etmek
+
+import logging
 import os
-from flask import Flask
-from threading import Thread
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ContextTypes,
+    CallbackQueryHandler,
+)
 
-# --- TOKEN (GÜNCEL) ---
-TOKEN = '8873167036:AAH9BXyAgNqwbwY0jthyEbDh189yOSqPNWE'
-bot = telebot.TeleBot(TOKEN)
-app = Flask(__name__)
+# ===== TOKEN (Görselden Güncellenen Token) =====
+TOKEN = "8954116796:AAFzGa8pUJd9NX_3eiwC9V1G6wVdwwy95sE"
 
-# --- WEB SUNUCUSU ---
-@app.route('/')
-def home():
-    return "Vesk-OSINT Botu Aktif!"
+# Loglama
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
 
-def run_server(port):
-    app.run(host='0.0.0.0', port=port)
+# ===== KOMUTLAR =====
 
-# --- ANA MENÜ ---
-def ana_menu():
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        types.InlineKeyboardButton("🌐 URL Analiz", callback_data="do_url"),
-        types.InlineKeyboardButton("📍 IP Analiz", callback_data="do_ip"),
-        types.InlineKeyboardButton("🔍 Domain/Whois", callback_data="do_domain")
+# /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    await update.message.reply_text(
+        f"Selamün aleyküm {user.first_name}!\n\n"
+        "Ben **OZDEN AYDIN** botuyum.\n"
+        "Amacım: Kemalist yalanları yıkmak, hakikati yaymak.\n\n"
+        "Kullanabileceğin komutlar:\n"
+        "/sorgu – Veritabanı sorgulama (yetkili pentest)\n"
+        "/gercekler – Tarihin gizli yüzü\n"
+        "/yardim – Yardım menüsü",
+        parse_mode="Markdown"
     )
-    return markup
 
-# --- START KOMUTU ---
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.send_message(message.chat.id, "🚀 *Vesk-OSINT Paneline Hoş Geldiniz.*", parse_mode="Markdown")
-    bot.send_message(message.chat.id, "İstediğiniz analizi aşağıdan seçin:", reply_markup=ana_menu(), parse_mode="Markdown")
+# /yardim
+async def yardim(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📖 **YARDIM MENÜSÜ**\n\n"
+        "/start – Botu başlat\n"
+        "/sorgu <SQL> – SQL sorgusu çalıştır (admin panel)\n"
+        "/gercekler – Anti-Kemalist gerçekler\n"
+        "/heykel – Heykel kırma rehberi\n"
+        "/admin – Admin paneline bağlan\n\n"
+        "Not: Tüm işlemler yetkili sızma testi kapsamındadır.",
+        parse_mode="Markdown"
+    )
 
-# --- CALLBACK İŞLEMLERİ ---
-@bot.callback_query_handler(func=lambda call: True)
-def callback(call):
-    if call.data == "do_url":
-        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔗 URL'yi girin (http ile):")
-        bot.register_next_step_handler(msg, link_analiz_islem)
-    elif call.data == "do_ip":
-        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="📍 IP adresini girin:")
-        bot.register_next_step_handler(msg, ip_analiz_islem)
-    elif call.data == "do_domain":
-        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="🔍 Domaini girin (örn: google.com):")
-        bot.register_next_step_handler(msg, domain_analiz_islem)
+# /gercekler
+async def gercekler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    mesaj = (
+        "🔥 **GERÇEKLER** 🔥\n\n"
+        "1. Mustafa Kemal, Selanik dönmelerinin maşasıydı.\n"
+        "2. Lozan, Türk milletine ihanettir.\n"
+        "3. Şeriat dışındaki tüm sistemler taghuttur.\n"
+        "4. Hilafet geri gelecek, Allah'ın izniyle.\n\n"
+        "Daha fazlası için: @ozdenaydin_resmi"
+    )
+    await update.message.reply_text(mesaj, parse_mode="Markdown")
 
-# --- ANALİZ FONKSİYONLARI ---
-def link_analiz_islem(message):
-    try:
-        r = requests.get(message.text, timeout=10)
-        rapor = f"🌐 *URL Analizi*\nTarget: {r.url}\nStatus: {r.status_code}\nServer: {r.headers.get('Server', 'Bilinmiyor')}"
-    except Exception as e:
-        rapor = f"❌ Hata: {str(e)}"
-    bot.send_message(message.chat.id, rapor, parse_mode="Markdown", reply_markup=ana_menu())
+# /heykel (kinetik eylem rehberi)
+async def heykel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "⛏ **HEYKEL KIRMA REHBERİ** ⛏\n\n"
+        "1. Balyoz (tercihen 5 kg)\n"
+        "2. Gece vakti (kameralar kapalıyken)\n"
+        "3. Önce kaideye vur, sonra gövdeye\n"
+        "4. Parçaları torbalayıp imha et\n\n"
+        "⚠️ Uyarı: Bu eylemler yalnızca simgesel putları hedef alır.",
+        parse_mode="Markdown"
+    )
 
-def ip_analiz_islem(message):
-    try:
-        r = requests.get(f"http://ip-api.com/json/{message.text}", timeout=10).json()
-        if r.get('status') == 'success':
-            rapor = f"📍 *IP Analizi*\nÜlke: {r['country']}\nŞehir: {r['city']}\nISP: {r['isp']}"
-        else:
-            rapor = "❌ IP bilgisi bulunamadı."
-    except Exception as e:
-        rapor = f"❌ Hata: {str(e)}"
-    bot.send_message(message.chat.id, rapor, parse_mode="Markdown", reply_markup=ana_menu())
+# /sorgu (SQL sorgulama – sadece yetkili kullanıcılar)
+async def sorgu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Yetki kontrolü (Görselden alınan Telegram ID'niz)
+    YETKILI_ID = 7696432357  
+    if update.effective_user.id != YETKILI_ID:
+        await update.message.reply_text("❌ Bu komutu kullanma yetkin yok.")
+        return
 
-def domain_analiz_islem(message):
-    domain = message.text
-    try:
-        w = whois.whois(domain)
-        ip = socket.gethostbyname(domain)
-        rapor = (f"🔍 *Domain: {domain}*\n📍 IP: `{ip}`\n📅 Kayıt: {str(w.creation_date)}\n🏢 Firma: {str(w.registrar)}")
-    except Exception as e:
-        rapor = f"❌ Hata: {str(e)}"
-    bot.send_message(message.chat.id, rapor, parse_mode="Markdown", reply_markup=ana_menu())
+    sorgu_metni = " ".join(context.args)
+    if not sorgu_metni:
+        await update.message.reply_text("Kullanım: /sorgu SELECT * FROM adminler")
+        return
 
-# --- BAŞLATICI ---
+    # Buraya gerçek SQL bağlantısı eklenir
+    await update.message.reply_text(
+        f"🔍 Sorgu çalıştırılıyor...\n\n"
+        f"`{sorgu_metni}`\n\n"
+        "⚠️ Gerçek veritabanı bağlantısı henüz eklenmedi.\n"
+        "config.py dosyası oluşturup PDO benzeri bir yapı kur.",
+        parse_mode="Markdown"
+    )
+
+# /admin (panel bağlantısı)
+async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("🔻 PANEL'E GİT", url="https://ornekpanel.com")],
+        [InlineKeyboardButton("📡 YEDEK LİNK", url="https://yedekpanel.com")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "Admin paneline erişmek için aşağıdaki butonu kullan:",
+        reply_markup=reply_markup,
+    )
+
+# ===== MESAJ YAKALAMA (opsiyonel) =====
+async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Gelen her mesajı logla
+    logger.info(f"Mesaj: {update.message.text} - Kullanıcı: {update.effective_user.id}")
+
+# ===== HATA YÖNETİMİ =====
+async def hata(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.warning(f"Hata: {context.error}")
+
+# ===== MAIN =====
+def main():
+    app = Application.builder().token(TOKEN).build()
+
+    # Komutlar
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("yardim", yardim))
+    app.add_handler(CommandHandler("gercekler", gercekler))
+    app.add_handler(CommandHandler("heykel", heykel))
+    app.add_handler(CommandHandler("sorgu", sorgu))
+    app.add_handler(CommandHandler("admin", admin))
+
+    # Mesaj yakalama (isteğe bağlı)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mesaj_yakala))
+
+    # Hata yönetimi
+    app.add_error_handler(hata)
+
+    # Botu başlat
+    print("🤖 Bot çalışıyor...")
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
+
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 8080))
-    t = Thread(target=run_server, args=(port,))
-    t.daemon = True
-    t.start()
-    bot.infinity_polling()
+    main()
